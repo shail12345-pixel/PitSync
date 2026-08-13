@@ -19,7 +19,7 @@ function App() {
   const [view, setView] = useState<View>('home')
   const [sessionCode, setSessionCode] = useState('')
   const [inputCode, setInputCode] = useState('')
-  const [role, setRole] = useState<'scout' | 'driver' | null>(null)
+
   const [notes, setNotes] = useState<Note[]>([])
   const [teamNumber, setTeamNumber] = useState('')
   const [matchNumber, setMatchNumber] = useState('')
@@ -57,7 +57,7 @@ function App() {
   function createSession() {
     const code = generateCode()
     setSessionCode(code)
-    setRole('scout')
+  
     setView('scout')
     setStatus('Session created: ' + code)
   }
@@ -65,7 +65,6 @@ function App() {
   function joinSession() {
     if (!inputCode.trim()) return
     setSessionCode(inputCode.trim().toUpperCase())
-    setRole('driver')
     setView('driver')
   }
 
