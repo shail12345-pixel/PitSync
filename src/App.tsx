@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import './App.css'
 
 type Note = {
   id: string
@@ -15,6 +16,51 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
+function formatRelativeTime(iso: string) {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
+  if (seconds < 10) return 'just now'
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  return `${hours}h ago`
+}
+
+const IconScout = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+    <path d="M9 3.5h6l1 3H8l1-3z" />
+    <rect x="5" y="6.5" width="14" height="14.5" rx="2" />
+    <path d="M9 12h6M9 16h4" />
+  </svg>
+)
+
+const IconDriver = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+    <circle cx="12" cy="12" r="7.5" />
+    <circle cx="12" cy="12" r="2.2" />
+    <path d="M12 4.5v3.3M12 16.2v3.3M4.5 12h3.3M16.2 12h3.3" />
+  </svg>
+)
+
+const IconBack = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+)
+
+const IconCopy = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+    <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+    <path d="M4.5 15.5V6a1.5 1.5 0 0 1 1.5-1.5h9.5" />
+  </svg>
+)
+
+const IconCheck = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+    <path d="M5 12.5l4.5 4.5L19 7" />
+  </svg>
+)
+
 function App() {
   const [view, setView] = useState<View>('home')
   const [sessionCode, setSessionCode] = useState('')
@@ -25,6 +71,7 @@ function App() {
   const [matchNumber, setMatchNumber] = useState('')
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('')
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!sessionCode) return
@@ -57,9 +104,8 @@ function App() {
   function createSession() {
     const code = generateCode()
     setSessionCode(code)
-  
     setView('scout')
-    setStatus('Session created: ' + code)
+    setStatus('')
   }
 
   function joinSession() {
@@ -77,35 +123,105 @@ function App() {
       content,
     })
     setContent('')
-    setStatus('Note sent')
+    setStatus('Note sent to drive team')
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(sessionCode)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  function renderHeader(role: 'SCOUT' | 'DRIVER') {
+    return (
+      <div className="topbar">
+        <button className="topbar__back" onClick={() => setView('home')} aria-label="Back to home">
+          {IconBack}
+        </button>
+        <div className="topbar__role">
+          <span className={`role-dot role-dot--${role.toLowerCase()}`} />
+          {role}
+        </div>
+        <button className="code-chip" onClick={copyCode} aria-label="Copy session code">
+          <span className="code-chip__code">{sessionCode}</span>
+          <span className="code-chip__icon">{copied ? IconCheck : IconCopy}</span>
+        </button>
+      </div>
+    )
+  }
+
+  function renderNotes(emptyText: string) {
+    return (
+      <div className="notes">
+        {notes.length === 0 ? (
+          <div className="empty-state">{emptyText}</div>
+        ) : (
+          notes.map((note) => (
+            <article key={note.id} className="note-card">
+              <div className="note-card__meta">
+                <span className="note-card__team">#{note.team_number}</span>
+                {note.match_number != null && (
+                  <span className="note-card__match">MATCH {note.match_number}</span>
+                )}
+                <span className="note-card__time">{formatRelativeTime(note.created_at)}</span>
+              </div>
+              <p className="note-card__content">{note.content}</p>
+            </article>
+          ))
+        )}
+      </div>
+    )
   }
 
   if (view === 'home') {
     return (
-      <div style={styles.container}>
-        <h1 style={styles.title}>PitSync</h1>
-        <p style={styles.subtitle}>Live team coordination for VEX</p>
+      <div className="app">
+        <div className="shell">
+          <div className="home">
+            <div className="home__hero">
+              <div className="home__eyebrow">VEX Robotics · Live Scouting</div>
+              <h1 className="home__title">PitSync</h1>
+              <p className="home__subtitle">
+                Real-time scouting notes between the stands and the pit — no refresh, no relay runs.
+              </p>
+            </div>
 
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Scout</h2>
-          <p style={styles.cardText}>Create a session and share the code with your team</p>
-          <button style={styles.button} onClick={createSession}>
-            Create Session
-          </button>
-        </div>
+            <div className="home__cards">
+              <button type="button" className="action-card" onClick={createSession}>
+                <span className="action-card__icon">{IconScout}</span>
+                <span className="action-card__text">
+                  <span className="action-card__title">Start Scouting</span>
+                  <span className="action-card__desc">
+                    Create a session and share the code with your drive team.
+                  </span>
+                </span>
+                <span className="action-card__chevron">›</span>
+              </button>
 
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Driver / Pit</h2>
-          <p style={styles.cardText}>Enter your session code to see live scout notes</p>
-          <input
-            style={styles.input}
-            value={inputCode}
-            onChange={(e) => setInputCode(e.target.value)}
-            placeholder="Enter code (e.g. ABC123)"
-          />
-          <button style={styles.button} onClick={joinSession}>
-            Join Session
-          </button>
+              <div className="action-card action-card--form">
+                <span className="action-card__icon">{IconDriver}</span>
+                <span className="action-card__text">
+                  <span className="action-card__title">Join as Driver</span>
+                  <span className="action-card__desc">Enter the session code from your scout.</span>
+                  <div className="join-form">
+                    <input
+                      className="join-form__input"
+                      value={inputCode}
+                      onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === 'Enter' && joinSession()}
+                      placeholder="ABC123"
+                      maxLength={6}
+                    />
+                    <button className="btn btn--primary" onClick={joinSession} disabled={!inputCode.trim()}>
+                      Join
+                    </button>
+                  </div>
+                </span>
+              </div>
+            </div>
+
+            <p className="home__footnote">No account needed — codes are session-only.</p>
+          </div>
         </div>
       </div>
     )
@@ -113,55 +229,64 @@ function App() {
 
   if (view === 'scout') {
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <button style={styles.backButton} onClick={() => setView('home')}>← Back</button>
-          <h1 style={styles.title}>Scout View</h1>
-        </div>
+      <div className="app">
+        <div className="shell">
+          {renderHeader('SCOUT')}
 
-        <div style={styles.sessionBadge}>
-          Session: <strong>{sessionCode}</strong> — share this with your team
-        </div>
-
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Add Scout Note</h2>
-          <input
-            style={styles.input}
-            value={teamNumber}
-            onChange={(e) => setTeamNumber(e.target.value)}
-            placeholder="Team number (e.g. 4610T)"
-          />
-          <input
-            style={styles.input}
-            value={matchNumber}
-            onChange={(e) => setMatchNumber(e.target.value)}
-            placeholder="Match number (optional)"
-            type="number"
-          />
-          <textarea
-            style={styles.textarea}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="What did you see? (auton, defense, driver skill...)"
-          />
-          <button style={styles.button} onClick={submitNote}>
-            Send Note
-          </button>
-          {status && <p style={styles.status}>{status}</p>}
-        </div>
-
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Notes Sent</h2>
-          {notes.length === 0 && <p style={styles.cardText}>No notes yet</p>}
-          {notes.map((note) => (
-            <div key={note.id} style={styles.note}>
-              <div style={styles.noteHeader}>
-                <strong>Team {note.team_number}</strong>
-                {note.match_number && <span> · Match {note.match_number}</span>}
+          <section className="panel">
+            <h2 className="panel__title">New Note</h2>
+            <div className="field-row">
+              <div className="field">
+                <label className="field__label">Team</label>
+                <input
+                  className="field__input field__input--mono"
+                  value={teamNumber}
+                  onChange={(e) => setTeamNumber(e.target.value.toUpperCase())}
+                  placeholder="4610T"
+                />
               </div>
-              <p style={styles.noteContent}>{note.content}</p>
+              <div className="field field--narrow">
+                <label className="field__label">Match</label>
+                <input
+                  className="field__input field__input--mono"
+                  value={matchNumber}
+                  onChange={(e) => setMatchNumber(e.target.value)}
+                  placeholder="—"
+                  type="number"
+                  inputMode="numeric"
+                />
+              </div>
             </div>
-          ))}
+            <div className="field">
+              <label className="field__label">Observation</label>
+              <textarea
+                className="field__textarea"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Auton scored 2, strong defense, drivetrain looked slow on turns..."
+              />
+            </div>
+            <button
+              className="btn btn--primary btn--block"
+              onClick={submitNote}
+              disabled={!content.trim() || !teamNumber.trim()}
+            >
+              Send to Drive Team
+            </button>
+            {status && (
+              <p className="status-line">
+                {IconCheck} {status}
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel__header">
+              <h2 className="panel__title">Sent</h2>
+              <span className="panel__count">{notes.length}</span>
+            </div>
+            {renderNotes('No notes sent yet — your first note will appear here.')}
+          </section>
         </div>
       </div>
     )
@@ -169,152 +294,29 @@ function App() {
 
   if (view === 'driver') {
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <button style={styles.backButton} onClick={() => setView('home')}>← Back</button>
-          <h1 style={styles.title}>Driver View</h1>
-        </div>
+      <div className="app">
+        <div className="shell">
+          {renderHeader('DRIVER')}
 
-        <div style={styles.sessionBadge}>
-          Session: <strong>{sessionCode}</strong>
-        </div>
+          <div className="live-strip">
+            <span className="live-dot" />
+            <span>Live</span>
+            <span className="live-strip__sub">Updates arrive automatically</span>
+          </div>
 
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Live Scout Notes</h2>
-          <p style={styles.cardText}>Updates appear automatically</p>
-          {notes.length === 0 && <p style={styles.cardText}>Waiting for scout notes...</p>}
-          {notes.map((note) => (
-            <div key={note.id} style={styles.note}>
-              <div style={styles.noteHeader}>
-                <strong>Team {note.team_number}</strong>
-                {note.match_number && <span> · Match {note.match_number}</span>}
-              </div>
-              <p style={styles.noteContent}>{note.content}</p>
+          <section className="panel">
+            <div className="panel__header">
+              <h2 className="panel__title">Scouting Feed</h2>
+              <span className="panel__count">{notes.length}</span>
             </div>
-          ))}
+            {renderNotes('Waiting for scout notes to come in...')}
+          </section>
         </div>
       </div>
     )
   }
 
   return null
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    maxWidth: 480,
-    margin: '0 auto',
-    padding: '20px 16px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    backgroundColor: '#0f0f0f',
-    minHeight: '100vh',
-    color: '#fff',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 700,
-    margin: '0 0 4px 0',
-    color: '#fff',
-  },
-  subtitle: {
-    color: '#888',
-    marginBottom: 24,
-    fontSize: 15,
-  },
-  card: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: 600,
-    margin: '0 0 8px 0',
-  },
-  cardText: {
-    color: '#888',
-    fontSize: 14,
-    margin: '0 0 12px 0',
-  },
-  button: {
-    backgroundColor: '#e63946',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    padding: '12px 20px',
-    fontSize: 15,
-    fontWeight: 600,
-    cursor: 'pointer',
-    width: '100%',
-    marginTop: 8,
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: 8,
-    border: '1px solid #333',
-    backgroundColor: '#111',
-    color: '#fff',
-    fontSize: 15,
-    marginBottom: 8,
-    boxSizing: 'border-box' as const,
-  },
-  textarea: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: 8,
-    border: '1px solid #333',
-    backgroundColor: '#111',
-    color: '#fff',
-    fontSize: 15,
-    marginBottom: 8,
-    minHeight: 80,
-    boxSizing: 'border-box' as const,
-    resize: 'vertical' as const,
-  },
-  sessionBadge: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: '10px 14px',
-    marginBottom: 16,
-    fontSize: 14,
-    color: '#aaa',
-  },
-  backButton: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    color: '#e63946',
-    fontSize: 15,
-    cursor: 'pointer',
-    padding: 0,
-  },
-  note: {
-    borderTop: '1px solid #222',
-    paddingTop: 12,
-    marginTop: 12,
-  },
-  noteHeader: {
-    fontSize: 14,
-    color: '#e63946',
-    marginBottom: 4,
-  },
-  noteContent: {
-    fontSize: 15,
-    color: '#fff',
-    margin: 0,
-  },
-  status: {
-    color: '#4caf50',
-    fontSize: 13,
-    marginTop: 8,
-  },
 }
 
 export default App
