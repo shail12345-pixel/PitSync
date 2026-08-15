@@ -1,11 +1,29 @@
 import { useState, useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import { supabase } from './supabaseClient'
 import './App.css'
+
+const CATEGORIES = ['Auton', 'Defense', 'Scoring', 'Drivetrain', 'Other'] as const
+type Category = (typeof CATEGORIES)[number]
+
+const CATEGORY_STYLE: Record<Category, { color: string; muted: string }> = {
+  Auton: { color: 'var(--cat-auton)', muted: 'var(--cat-auton-muted)' },
+  Defense: { color: 'var(--cat-defense)', muted: 'var(--cat-defense-muted)' },
+  Scoring: { color: 'var(--cat-scoring)', muted: 'var(--cat-scoring-muted)' },
+  Drivetrain: { color: 'var(--cat-drivetrain)', muted: 'var(--cat-drivetrain-muted)' },
+  Other: { color: 'var(--cat-other)', muted: 'var(--cat-other-muted)' },
+}
+
+function categoryVars(category: Category): CSSProperties {
+  const style = CATEGORY_STYLE[category]
+  return { '--chip-color': style.color, '--chip-muted': style.muted } as CSSProperties
+}
 
 type Note = {
   id: string
   team_number: string
   match_number: number | null
+  category: Category
   content: string
   created_at: string
 }
@@ -61,6 +79,41 @@ const IconCheck = (
   </svg>
 )
 
+function CategoryChips({
+  selected,
+  onToggle,
+  label,
+}: {
+  selected: Category | null
+  onToggle: (category: Category) => void
+  label: string
+}) {
+  return (
+    <div className="category-chips" role="group" aria-label={label}>
+      {CATEGORIES.map((cat) => (
+        <button
+          key={cat}
+          type="button"
+          className={`category-chip${selected === cat ? ' category-chip--selected' : ''}`}
+          style={categoryVars(cat)}
+          aria-pressed={selected === cat}
+          onClick={() => onToggle(cat)}
+        >
+          {cat}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function CategoryBadge({ category }: { category: Category }) {
+  return (
+    <span className="category-badge" style={categoryVars(category)}>
+      {category}
+    </span>
+  )
+}
+
 function App() {
   const [view, setView] = useState<View>('home')
   const [sessionCode, setSessionCode] = useState('')
@@ -69,9 +122,11 @@ function App() {
   const [notes, setNotes] = useState<Note[]>([])
   const [teamNumber, setTeamNumber] = useState('')
   const [matchNumber, setMatchNumber] = useState('')
+  const [category, setCategory] = useState<Category | null>(null)
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('')
   const [copied, setCopied] = useState(false)
+  const [filterCategory, setFilterCategory] = useState<Category | null>(null)
 
   useEffect(() => {
     if (!sessionCode) return
@@ -115,11 +170,12 @@ function App() {
   }
 
   async function submitNote() {
-    if (!content.trim() || !teamNumber.trim()) return
+    if (!content.trim() || !teamNumber.trim() || !category) return
     await supabase.from('scout_notes').insert({
       session_code: sessionCode,
       team_number: teamNumber,
       match_number: matchNumber ? parseInt(matchNumber) : null,
+      category,
       content,
     })
     setContent('')
@@ -150,15 +206,16 @@ function App() {
     )
   }
 
-  function renderNotes(emptyText: string) {
+  function renderNotes(emptyText: string, list: Note[]) {
     return (
       <div className="notes">
-        {notes.length === 0 ? (
+        {list.length === 0 ? (
           <div className="empty-state">{emptyText}</div>
         ) : (
-          notes.map((note) => (
+          list.map((note) => (
             <article key={note.id} className="note-card">
               <div className="note-card__meta">
+                <CategoryBadge category={note.category} />
                 <span className="note-card__team">#{note.team_number}</span>
                 {note.match_number != null && (
                   <span className="note-card__match">MATCH {note.match_number}</span>
@@ -172,6 +229,8 @@ function App() {
       </div>
     )
   }
+
+  const filteredNotes = filterCategory ? notes.filter((note) => note.category === filterCategory) : notes
 
   if (view === 'home') {
     return (
@@ -258,18 +317,22 @@ function App() {
               </div>
             </div>
             <div className="field">
+              <label className="field__label">Category</label>
+              <CategoryChips selected={category} onToggle={setCategory} label="Note category" />
+            </div>
+            <div className="field">
               <label className="field__label">Observation</label>
               <textarea
                 className="field__textarea"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Auton scored 2, strong defense, drivetrain looked slow on turns..."
+                placeholder="Scored 2 in auton, strong defense, drivetrain looked slow on turns..."
               />
             </div>
             <button
               className="btn btn--primary btn--block"
               onClick={submitNote}
-              disabled={!content.trim() || !teamNumber.trim()}
+              disabled={!content.trim() || !teamNumber.trim() || !category}
             >
               Send to Drive Team
             </button>
@@ -285,7 +348,7 @@ function App() {
               <h2 className="panel__title">Sent</h2>
               <span className="panel__count">{notes.length}</span>
             </div>
-            {renderNotes('No notes sent yet — your first note will appear here.')}
+            {renderNotes('No notes sent yet — your first note will appear here.', notes)}
           </section>
         </div>
       </div>
@@ -306,10 +369,29 @@ function App() {
 
           <section className="panel">
             <div className="panel__header">
-              <h2 className="panel__title">Scouting Feed</h2>
-              <span className="panel__count">{notes.length}</span>
+              <h2 className="panel__title">Filter</h2>
+              {filterCategory && (
+                <button className="panel__clear" onClick={() => setFilterCategory(null)}>
+                  Clear
+                </button>
+              )}
             </div>
-            {renderNotes('Waiting for scout notes to come in...')}
+            <CategoryChips
+              selected={filterCategory}
+              onToggle={(cat) => setFilterCategory((current) => (current === cat ? null : cat))}
+              label="Filter by category"
+            />
+          </section>
+
+          <section className="panel">
+            <div className="panel__header">
+              <h2 className="panel__title">Scouting Feed</h2>
+              <span className="panel__count">{filteredNotes.length}</span>
+            </div>
+            {renderNotes(
+              filterCategory ? 'No notes in this category yet.' : 'Waiting for scout notes to come in...',
+              filteredNotes
+            )}
           </section>
         </div>
       </div>

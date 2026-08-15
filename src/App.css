@@ -390,6 +390,68 @@ button.action-card:hover {
   padding: 2px 9px;
 }
 
+.panel__clear {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 2px 0;
+}
+
+.panel__clear:hover {
+  color: var(--accent-hover);
+}
+
+/* ---------- Category chips & badge ---------- */
+
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-chip {
+  --chip-color: var(--text-secondary);
+  --chip-muted: var(--surface-raised);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--chip-color);
+  background: var(--chip-muted);
+  color: var(--chip-color);
+  border-radius: 999px;
+  padding: 10px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background-color 0.12s ease, color 0.12s ease, transform 0.1s ease;
+}
+
+.category-chip:active {
+  transform: scale(0.96);
+}
+
+.category-chip--selected {
+  background: var(--chip-color);
+  color: #08090b;
+}
+
+.category-badge {
+  --chip-color: var(--text-secondary);
+  --chip-muted: var(--surface-raised);
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chip-color);
+  background: var(--chip-muted);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
 /* ---------- Form fields ---------- */
 
 .field-row {

@@ -29,6 +29,18 @@
   --live-muted: rgba(51, 209, 126, 0.14);
   --success: #33d17e;
 
+  /* note categories */
+  --cat-auton: #8b6bff;
+  --cat-auton-muted: rgba(139, 107, 255, 0.14);
+  --cat-defense: #4d8dff;
+  --cat-defense-muted: rgba(77, 141, 255, 0.14);
+  --cat-scoring: #33d17e;
+  --cat-scoring-muted: rgba(51, 209, 126, 0.14);
+  --cat-drivetrain: #ff9f3b;
+  --cat-drivetrain-muted: rgba(255, 159, 59, 0.14);
+  --cat-other: #9a9ca5;
+  --cat-other-muted: rgba(154, 156, 165, 0.14);
+
   /* type */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
