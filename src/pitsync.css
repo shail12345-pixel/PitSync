@@ -1,0 +1,22 @@
+/* Import once (e.g. in main.jsx). Fonts: add to index.html <head> instead if
+   you prefer:
+   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"> */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+ 
+@keyframes pitsync-transit {
+  0%   { transform: translateX(-70%); }
+  100% { transform: translateX(240%); }
+}
+.pitsync-transit { animation: pitsync-transit 1.1s linear infinite; }
+ 
+@keyframes pitsync-arrive {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.pitsync-arrive { animation: pitsync-arrive 0.22s ease-out both; }
+ 
+/* hide scrollbars in the note logs */
+.pitsync-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.pitsync-scroll { scrollbar-width: none; }
+ 
