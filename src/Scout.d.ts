@@ -12,6 +12,7 @@ export interface PitSyncNote {
   category: string
   text: string
   meta?: string
+  team?: string
   status?: 'sending' | 'queued' | 'sent'
 }
 

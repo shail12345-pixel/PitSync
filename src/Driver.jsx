@@ -26,6 +26,7 @@ export default function Driver({
   largeText = false,
   categories = CATEGORIES,
   onLeave,
+  onLookupTeam,
   framed = false,
 }) {
   const visible = filter === 'all' ? notes : notes.filter((n) => n.category === filter);
@@ -62,6 +63,13 @@ export default function Driver({
         >
           {inTransit > 0 ? `${inTransit} in transit` : syncedAt ? `synced ${syncedAt}` : 'synced'}
         </span>
+      </div>
+
+      <div className="flex shrink-0 items-center justify-between px-[22px] pb-3 font-['IBM_Plex_Mono'] text-[11px] text-white/30">
+        <span>{notes.length} notes this session</span>
+        <button type="button" onClick={onLookupTeam} className="text-white/50">
+          look up team →
+        </button>
       </div>
 
       <div className="h-px shrink-0 bg-white/[0.07]" />

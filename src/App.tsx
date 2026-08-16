@@ -6,6 +6,8 @@ import TeamEntry from './TeamEntry'
 import JoinCode from './JoinCode'
 import Scout from './Scout'
 import Driver from './Driver'
+import TeamLookup from './TeamLookup'
+import TeamNotes from './TeamNotes'
 import { dbCategoryForId, rowToUiNote } from './noteMapping'
 import type { NoteRow, UiNote } from './noteMapping'
 import { dequeueNote, queueNote, queuedNotesForSession } from './offlineQueue'
@@ -13,7 +15,7 @@ import { readLastSession, writeLastSession } from './lastSession'
 import type { LastSession } from './lastSession'
 import { createSession, joinSession } from './sessionAuth'
 
-type View = 'landing' | 'team-entry' | 'join-code' | 'scout' | 'driver'
+type View = 'landing' | 'team-entry' | 'join-code' | 'scout' | 'driver' | 'team-lookup' | 'team-notes'
 type ConnectionState = 'good' | 'spotty' | 'offline'
 
 // Codes are typed by hand on someone else's phone — 4 chars, no 0/O/1/I.
@@ -46,6 +48,7 @@ function App() {
   const [startError, setStartError] = useState<string | null>(null)
   const [joinSubmitting, setJoinSubmitting] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
+  const [lookupTeam, setLookupTeam] = useState('')
 
   const role: 'scout' | 'driver' = view === 'driver' ? 'driver' : 'scout'
   const connection: ConnectionState = !online ? 'offline' : channelStatus
@@ -234,6 +237,19 @@ function App() {
     await attemptJoin(code, stored?.role === 'scout' ? 'scout' : 'driver', stored?.team ?? '')
   }
 
+  function handleLookupTeam() {
+    setView('team-lookup')
+  }
+
+  function handleTeamLookupSubmit(nextTeam: string) {
+    setLookupTeam(nextTeam)
+    setView('team-notes')
+  }
+
+  function handleBackToDriver() {
+    setView('driver')
+  }
+
   function handleLeave() {
     supabase.auth.signOut().catch(() => {})
     setSessionCode('')
@@ -254,6 +270,7 @@ function App() {
       category: categoryId,
       text,
       meta: `Q${match}`,
+      team,
       status: online ? 'sending' : 'queued',
       created_at: new Date().toISOString(),
     }
@@ -344,6 +361,21 @@ function App() {
     )
   }
 
+  if (view === 'team-lookup') {
+    return (
+      <TeamLookup
+        connection={connection}
+        onBack={handleBackToDriver}
+        onSubmit={handleTeamLookupSubmit}
+        notes={notes}
+      />
+    )
+  }
+
+  if (view === 'team-notes') {
+    return <TeamNotes connection={connection} team={lookupTeam} notes={notes} onBack={handleBackToDriver} />
+  }
+
   return (
     <Driver
       team={team}
@@ -354,6 +386,7 @@ function App() {
       connection={connection}
       syncedAt={syncedAt}
       onLeave={handleLeave}
+      onLookupTeam={handleLookupTeam}
     />
   )
 }

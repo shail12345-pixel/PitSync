@@ -13,6 +13,7 @@ export interface DriverProps {
   largeText?: boolean
   categories?: NoteCategory[]
   onLeave?: () => void
+  onLookupTeam?: () => void
   framed?: boolean
 }
 

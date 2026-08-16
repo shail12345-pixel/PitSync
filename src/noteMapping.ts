@@ -21,6 +21,7 @@ export type UiNote = {
   category: string
   text: string
   meta: string
+  team: string
   status?: UiStatus
   created_at: string
 }
@@ -53,6 +54,7 @@ export function rowToUiNote(row: NoteRow, status: UiStatus = 'sent'): UiNote {
     category: CATEGORY_ID_BY_DB[row.category] ?? 'other',
     text: row.content,
     meta: row.match_number != null ? `Q${row.match_number}` : '',
+    team: row.team_number,
     status,
     created_at: row.created_at,
   }
