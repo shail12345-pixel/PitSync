@@ -12,6 +12,7 @@ export interface DriverProps {
   syncedAt?: string
   largeText?: boolean
   categories?: NoteCategory[]
+  onLeave?: () => void
   framed?: boolean
 }
 

@@ -22,21 +22,27 @@ body {
   min-height: 100vh;
 }
 
-button,
-input,
-textarea {
-  font-family: inherit;
-  color: inherit;
-}
+/* Layered (not left implicit) so these resets sit in Tailwind's own
+   `base` layer and lose to any utility class, per-spec unlayered CSS
+   always outranks layered CSS regardless of specificity — that silently
+   beat e.g. Landing's text-[#08090b] on the Start scouting button. */
+@layer base {
+  button,
+  input,
+  textarea {
+    font-family: inherit;
+    color: inherit;
+  }
 
-button {
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-}
+  button {
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
 
-input,
-textarea {
-  -webkit-appearance: none;
-  appearance: none;
+  input,
+  textarea {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }

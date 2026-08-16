@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient'
 import Landing from './Landing'
+import TeamEntry from './TeamEntry'
+import JoinCode from './JoinCode'
 import Scout from './Scout'
 import Driver from './Driver'
 import { dbCategoryForId, rowToUiNote } from './noteMapping'
@@ -11,7 +13,7 @@ import { readLastSession, writeLastSession } from './lastSession'
 import type { LastSession } from './lastSession'
 import { createSession, joinSession } from './sessionAuth'
 
-type View = 'landing' | 'scout' | 'driver'
+type View = 'landing' | 'team-entry' | 'join-code' | 'scout' | 'driver'
 type ConnectionState = 'good' | 'spotty' | 'offline'
 
 // Codes are typed by hand on someone else's phone — 4 chars, no 0/O/1/I.
@@ -40,6 +42,10 @@ function App() {
   const [lastSession, setLastSession] = useState<LastSession | null>(() => readLastSession())
   const [online, setOnline] = useState(() => navigator.onLine)
   const [channelStatus, setChannelStatus] = useState<'good' | 'spotty'>('good')
+  const [startSubmitting, setStartSubmitting] = useState(false)
+  const [startError, setStartError] = useState<string | null>(null)
+  const [joinSubmitting, setJoinSubmitting] = useState(false)
+  const [joinError, setJoinError] = useState<string | null>(null)
 
   const role: 'scout' | 'driver' = view === 'driver' ? 'driver' : 'scout'
   const connection: ConnectionState = !online ? 'offline' : channelStatus
@@ -169,35 +175,75 @@ function App() {
     enterSession(code, nextView, result.team || fallbackTeam)
   }
 
-  async function handleStart() {
-    const teamInput = window.prompt('Which team are you scouting? (e.g. 1234A)')
-    if (!teamInput || !teamInput.trim()) return
-    const team = teamInput.trim().toUpperCase()
+  function handleStart() {
+    setStartError(null)
+    setView('team-entry')
+  }
 
+  function handleJoin() {
+    setJoinError(null)
+    setView('join-code')
+  }
+
+  function handleBackToLanding() {
+    setStartError(null)
+    setJoinError(null)
+    setView('landing')
+  }
+
+  async function handleTeamSubmit(team: string) {
+    setStartSubmitting(true)
+    setStartError(null)
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = generateCode()
       const result = await createSession(code, team)
       if (result.ok) {
         enterSession(code, 'scout', team)
+        setStartSubmitting(false)
         return
       }
       if (result.reason !== 'conflict') {
-        window.alert('Could not start a session — check your connection and try again.')
+        setStartError('Could not start a session — check your connection and try again.')
+        setStartSubmitting(false)
         return
       }
     }
-    window.alert('Could not find an available session code — try again.')
+    setStartError('Could not find an available session code — try again.')
+    setStartSubmitting(false)
   }
 
-  async function handleJoin() {
-    const codeInput = window.prompt('Enter the 4-character session code')
-    if (!codeInput || !codeInput.trim()) return
-    await attemptJoin(codeInput.trim().toUpperCase(), 'driver', '')
+  async function handleCodeSubmit(code: string) {
+    setJoinSubmitting(true)
+    setJoinError(null)
+    const result = await joinSession(code)
+    if (!result.ok) {
+      setJoinError(
+        result.reason === 'not-found'
+          ? `No session found for code ${code}.`
+          : 'Could not join — check your connection and try again.',
+      )
+      setJoinSubmitting(false)
+      return
+    }
+    enterSession(code, 'driver', result.team)
+    setJoinSubmitting(false)
   }
 
   async function handleRejoin(code: string) {
     const stored = lastSession?.code === code ? lastSession : null
     await attemptJoin(code, stored?.role === 'scout' ? 'scout' : 'driver', stored?.team ?? '')
+  }
+
+  function handleLeave() {
+    supabase.auth.signOut().catch(() => {})
+    setSessionCode('')
+    setTeam('')
+    setMatch(1)
+    setNotes([])
+    setFilter('all')
+    setDriverCount(0)
+    setChannelStatus('good')
+    setView('landing')
   }
 
   async function handleSend(categoryId: string, text: string) {
@@ -257,6 +303,30 @@ function App() {
     )
   }
 
+  if (view === 'team-entry') {
+    return (
+      <TeamEntry
+        connection={online ? 'good' : 'offline'}
+        onBack={handleBackToLanding}
+        onSubmit={handleTeamSubmit}
+        submitting={startSubmitting}
+        error={startError}
+      />
+    )
+  }
+
+  if (view === 'join-code') {
+    return (
+      <JoinCode
+        connection={online ? 'good' : 'offline'}
+        onBack={handleBackToLanding}
+        onSubmit={handleCodeSubmit}
+        submitting={joinSubmitting}
+        error={joinError}
+      />
+    )
+  }
+
   if (view === 'scout') {
     return (
       <Scout
@@ -269,6 +339,7 @@ function App() {
         notes={notes}
         onSend={handleSend}
         connection={connection}
+        onLeave={handleLeave}
       />
     )
   }
@@ -282,6 +353,7 @@ function App() {
       onFilterChange={setFilter}
       connection={connection}
       syncedAt={syncedAt}
+      onLeave={handleLeave}
     />
   )
 }

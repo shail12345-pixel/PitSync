@@ -31,6 +31,7 @@ export default function Scout({
   connection = 'good',
   categories = CATEGORIES,
   defaultCategory,
+  onLeave,
   framed = false,
 }) {
   const [category, setCategory] = useState(defaultCategory || categories[0].id);
@@ -57,11 +58,21 @@ export default function Scout({
       <ConnectionBar connection={connection} />
 
       <div className="flex shrink-0 items-end justify-between px-[22px] pb-3.5 pt-5">
-        <div className="flex flex-col gap-1">
-          <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
-            SCOUTING
-          </span>
-          <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{team}</span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Leave session"
+            onClick={onLeave}
+            className="h-[30px] w-[30px] rounded-[9px] border border-white/[0.12] text-base leading-none text-white/60 active:bg-white/[0.05]"
+          >
+            ←
+          </button>
+          <div className="flex flex-col gap-1">
+            <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+              SCOUTING
+            </span>
+            <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{team}</span>
+          </div>
         </div>
         <div className="flex items-center gap-2.5">
           <button

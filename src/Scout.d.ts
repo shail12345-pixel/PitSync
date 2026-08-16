@@ -27,6 +27,7 @@ export interface ScoutProps {
   connection?: Connection
   categories?: NoteCategory[]
   defaultCategory?: string
+  onLeave?: () => void
   framed?: boolean
 }
 
