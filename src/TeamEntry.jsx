@@ -10,13 +10,22 @@ import { ConnectionBar, Screen } from './Chrome';
  *   onBack()               return to Landing
  *   onSubmit(team)          team is already trimmed + uppercased
  *   submitting  boolean     session is being created — disable + show state
+ *   progress    'signing-in'|'creating'|null   real stage, not a guess —
+ *               shown instead of a static "Starting…" so a slow attempt
+ *               reads as working, not frozen
  *   error       string|null e.g. "Could not start a session — try again."
  */
+const PROGRESS_LABEL = {
+  'signing-in': 'Signing in…',
+  creating: 'Starting session…',
+};
+
 export default function TeamEntry({
   connection = 'good',
   onBack,
   onSubmit,
   submitting = false,
+  progress = null,
   error = null,
   framed = false,
 }) {
@@ -89,7 +98,7 @@ export default function TeamEntry({
               color: canSubmit ? '#08090b' : 'rgba(255,255,255,0.4)',
             }}
           >
-            {submitting ? 'Starting…' : 'Start session'}
+            {submitting ? PROGRESS_LABEL[progress] ?? 'Starting…' : 'Start session'}
           </button>
         </div>
       </div>

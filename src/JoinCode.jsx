@@ -14,13 +14,22 @@ const CODE_LENGTH = 4;
  *   onBack()               return to Landing
  *   onSubmit(code)          code is already uppercased, length 4
  *   submitting  boolean     join is in flight — disable + show state
+ *   progress    'signing-in'|'joining'|null   real stage, not a guess —
+ *               shown instead of a static "Joining…" so a slow attempt
+ *               reads as working, not frozen
  *   error       string|null e.g. "No session found for code ABCD."
  */
+const PROGRESS_LABEL = {
+  'signing-in': 'Signing in…',
+  joining: 'Joining session…',
+};
+
 export default function JoinCode({
   connection = 'good',
   onBack,
   onSubmit,
   submitting = false,
+  progress = null,
   error = null,
   framed = false,
 }) {
@@ -142,7 +151,7 @@ export default function JoinCode({
               color: canSubmit ? '#08090b' : 'rgba(255,255,255,0.4)',
             }}
           >
-            {submitting ? 'Joining…' : 'Join session'}
+            {submitting ? PROGRESS_LABEL[progress] ?? 'Joining…' : 'Join session'}
           </button>
         </div>
       </div>

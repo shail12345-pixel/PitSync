@@ -6,6 +6,7 @@ export interface JoinCodeProps {
   onBack?: () => void
   onSubmit?: (code: string) => void
   submitting?: boolean
+  progress?: 'signing-in' | 'joining' | null
   error?: string | null
   framed?: boolean
 }

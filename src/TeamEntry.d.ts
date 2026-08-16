@@ -6,6 +6,7 @@ export interface TeamEntryProps {
   onBack?: () => void
   onSubmit?: (team: string) => void
   submitting?: boolean
+  progress?: 'signing-in' | 'creating' | null
   error?: string | null
   framed?: boolean
 }
