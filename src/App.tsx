@@ -9,6 +9,7 @@ import type { NoteRow, UiNote } from './noteMapping'
 import { dequeueNote, queueNote, queuedNotesForSession } from './offlineQueue'
 import { readLastSession, writeLastSession } from './lastSession'
 import type { LastSession } from './lastSession'
+import { createSession, joinSession } from './sessionAuth'
 
 type View = 'landing' | 'scout' | 'driver'
 type ConnectionState = 'good' | 'spotty' | 'offline'
@@ -155,25 +156,48 @@ function App() {
     setLastSession(session)
   }
 
-  function handleStart() {
+  async function attemptJoin(code: string, nextView: 'scout' | 'driver', fallbackTeam: string) {
+    const result = await joinSession(code)
+    if (!result.ok) {
+      window.alert(
+        result.reason === 'not-found'
+          ? `No session found for code ${code}.`
+          : 'Could not join — check your connection and try again.',
+      )
+      return
+    }
+    enterSession(code, nextView, result.team || fallbackTeam)
+  }
+
+  async function handleStart() {
     const teamInput = window.prompt('Which team are you scouting? (e.g. 1234A)')
     if (!teamInput || !teamInput.trim()) return
-    enterSession(generateCode(), 'scout', teamInput.trim().toUpperCase())
+    const team = teamInput.trim().toUpperCase()
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = generateCode()
+      const result = await createSession(code, team)
+      if (result.ok) {
+        enterSession(code, 'scout', team)
+        return
+      }
+      if (result.reason !== 'conflict') {
+        window.alert('Could not start a session — check your connection and try again.')
+        return
+      }
+    }
+    window.alert('Could not find an available session code — try again.')
   }
 
-  function handleJoin() {
+  async function handleJoin() {
     const codeInput = window.prompt('Enter the 4-character session code')
     if (!codeInput || !codeInput.trim()) return
-    enterSession(codeInput.trim().toUpperCase(), 'driver', '')
+    await attemptJoin(codeInput.trim().toUpperCase(), 'driver', '')
   }
 
-  function handleRejoin(code: string) {
+  async function handleRejoin(code: string) {
     const stored = lastSession?.code === code ? lastSession : null
-    if (stored?.role === 'scout') {
-      enterSession(code, 'scout', stored.team ?? '')
-    } else {
-      enterSession(code, 'driver', '')
-    }
+    await attemptJoin(code, stored?.role === 'scout' ? 'scout' : 'driver', stored?.team ?? '')
   }
 
   async function handleSend(categoryId: string, text: string) {
