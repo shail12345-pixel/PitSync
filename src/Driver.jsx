@@ -51,7 +51,7 @@ export default function Driver({
             ←
           </button>
           <div className="flex flex-col gap-1">
-            <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+            <span className="font-['IBM_Plex_Sans'] text-[10px] font-semibold tracking-[0.08em] text-white/[0.34]">
               SESSION {sessionCode}
             </span>
             <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{team}</span>
@@ -106,7 +106,7 @@ export default function Driver({
               key={c.id}
               type="button"
               onClick={() => onFilterChange?.(c.id)}
-              className="h-[34px] shrink-0 rounded-[10px] border px-3 font-['IBM_Plex_Mono'] text-[11px] tracking-[0.1em] transition-colors"
+              className="h-[34px] shrink-0 rounded-[4px] border px-3 font-['IBM_Plex_Mono'] text-[11px] tracking-[0.1em] transition-colors"
               style={{
                 borderColor: on ? c.color : 'rgba(255,255,255,0.1)',
                 background: on ? `color-mix(in oklab, ${c.color} 14%, transparent)` : 'transparent',

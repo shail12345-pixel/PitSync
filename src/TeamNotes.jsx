@@ -45,7 +45,7 @@ export default function TeamNotes({
           ←
         </button>
         <div className="flex flex-col gap-1">
-          <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+          <span className="font-['IBM_Plex_Sans'] text-[10px] font-semibold tracking-[0.08em] text-white/[0.34]">
             TEAM · ACCUMULATED
           </span>
           <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{team}</span>

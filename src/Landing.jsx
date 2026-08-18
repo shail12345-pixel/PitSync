@@ -28,7 +28,7 @@ export default function Landing({
           <div className="flex flex-col gap-1.5">
             <div className="text-[34px] font-semibold leading-none tracking-[-0.025em]">PitSync</div>
             <div className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.14em] text-white/30">
-              VEX V5 · STANDS → PIT
+              VEX V5 · SCOUT → DRIVE
             </div>
           </div>
           <p className="max-w-[250px] text-pretty text-base leading-[1.45] text-white/[0.58]">
