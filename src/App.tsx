@@ -73,6 +73,7 @@ function App() {
 
   const lastActivityRef = useRef(Date.now())
   const flushingRef = useRef(false)
+  const prevConnectionRef = useRef<ConnectionState>('good')
 
   const role: 'scout' | 'driver' = view === 'driver' ? 'driver' : 'scout'
   // A local link that's confirmed down always wins — that part of
@@ -150,6 +151,41 @@ function App() {
     }
   }
 
+  // Merge a fresh server-side note list into state without dropping any
+  // note that only exists locally so far (an optimistic send still in
+  // flight or sitting in the offline queue — id starts with 'local-').
+  // Anything the server already has wins over any local copy of it.
+  function applyServerNotes(rows: NoteRow[]) {
+    const serverNotes = rows.map((row) => rowToUiNote(row))
+    const serverIds = new Set(serverNotes.map((n) => n.id))
+    setNotes((current) => {
+      const localOnly = current.filter((n) => n.id.startsWith('local-') && !serverIds.has(n.id))
+      return [...serverNotes, ...localOnly].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )
+    })
+    setSyncedAt(formatClock(new Date()))
+    if (!team && rows.length > 0) setTeam(rows[0].team_number)
+  }
+
+  // Realtime only carries events from the moment a channel is (re)subscribed
+  // — it doesn't replay what happened while a client was disconnected. A
+  // driver whose wifi drops and comes back is subscribed to a *new* stream,
+  // not caught up on the old one, so notes sent during the gap never
+  // arrive on their own. This is the catch-up: a plain REST fetch of the
+  // full session list, called whenever we have reason to believe we missed
+  // something — connection health recovering, or the realtime channel
+  // itself resubscribing.
+  async function catchUpNotes(code: string) {
+    const { data, error } = await supabase
+      .from('scout_notes')
+      .select('*')
+      .eq('session_code', code)
+      .order('created_at', { ascending: false })
+    if (error || !data) return
+    applyServerNotes(data as NoteRow[])
+  }
+
   // network state — 'online' firing is also a good moment to actively
   // confirm the connection rather than just trusting the event.
   useEffect(() => {
@@ -183,11 +219,14 @@ function App() {
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (cancelled || error || !data) return
-        const rows = data as NoteRow[]
-        setNotes(rows.map((row) => rowToUiNote(row)))
-        setSyncedAt(formatClock(new Date()))
-        if (!team && rows.length > 0) setTeam(rows[0].team_number)
+        applyServerNotes(data as NoteRow[])
       })
+
+    // Tracks whether we've seen SUBSCRIBED before on this channel — the
+    // first time is the normal initial connect (already covered by the
+    // fetch above); every time after that is a real resubscribe, which
+    // means the socket dropped and reopened as a fresh stream.
+    let hasSubscribedOnce = false
 
     const channel: RealtimeChannel = supabase
       .channel(`session-${sessionCode}`)
@@ -218,6 +257,8 @@ function App() {
         if (status === 'SUBSCRIBED') {
           recordActivity()
           if (role === 'driver') await channel.track({ role: 'driver' })
+          if (hasSubscribedOnce) catchUpNotes(sessionCode)
+          hasSubscribedOnce = true
         }
         // TIMED_OUT/CHANNEL_ERROR/CLOSED deliberately not handled here —
         // verified a degraded-but-still-open connection often never fires
@@ -239,6 +280,20 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionCode, role])
+
+  // Second, independent trigger for the same catch-up: connection health
+  // (our own activity-based signal, not the channel's own status callback)
+  // going from spotty/offline back to good. Belt and suspenders — a
+  // resubscribe doesn't always fire cleanly, but health recovering is
+  // exactly the moment we know we may have missed something.
+  useEffect(() => {
+    const prev = prevConnectionRef.current
+    prevConnectionRef.current = connection
+    if (prev !== 'good' && connection === 'good' && sessionCode) {
+      catchUpNotes(sessionCode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connection, sessionCode])
 
   function enterSession(code: string, nextView: 'scout' | 'driver', nextTeam: string) {
     setTeam(nextTeam)

@@ -102,7 +102,7 @@ export default function Scout({
 
       <div className="flex shrink-0 items-center justify-between px-[22px] pb-3 font-['IBM_Plex_Mono'] text-[11px] text-white/30">
         <span>
-          SESSION {sessionCode} · {driverCount} in pit
+          SESSION <span className="tracking-[0.06em] text-white/70">{sessionCode}</span> · {driverCount} in pit
         </span>
         <button type="button" onClick={onCopyCode} className="text-white/50">
           copy code
@@ -129,7 +129,7 @@ export default function Scout({
                     {s.statusText}
                   </span>
                 </div>
-                <div className="text-pretty text-[15px] leading-[1.4] text-white/[0.82]">{note.text}</div>
+                <div className="text-pretty text-[16.5px] leading-[1.42] text-white/[0.82]">{note.text}</div>
                 {s.shimmer && (
                   <div className="mt-0.5 h-px overflow-hidden bg-white/[0.07]">
                     <div className="pitsync-transit h-px w-[30%]" style={{ background: s.cat.color }} />
