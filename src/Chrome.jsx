@@ -12,7 +12,7 @@ export function ConnectionBar({ connection = 'good', clock = '9:41' }) {
           style={{ width: c.width, background: c.color }}
         />
       </div>
-      <div className="flex shrink-0 items-center justify-between px-6 pt-3.5 font-['IBM_Plex_Mono'] text-[11px] text-white/35">
+      <div className="flex shrink-0 items-center justify-between px-6 pt-3.5 font-['IBM_Plex_Mono'] text-[11px] text-white/[0.48]">
         <span>{clock}</span>
         <span>{c.label}</span>
       </div>

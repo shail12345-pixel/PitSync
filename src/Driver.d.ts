@@ -3,7 +3,6 @@ import type { Connection } from './Landing'
 import type { NoteCategory, PitSyncNote } from './Scout'
 
 export interface DriverProps {
-  team?: string
   sessionCode?: string
   notes?: PitSyncNote[]
   filter?: string

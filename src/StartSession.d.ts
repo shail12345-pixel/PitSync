@@ -1,15 +1,15 @@
 import type { FC } from 'react'
 import type { Connection } from './Landing'
 
-export interface TeamEntryProps {
+export interface StartSessionProps {
   connection?: Connection
   onBack?: () => void
-  onSubmit?: (team: string) => void
+  onSubmit?: (name: string) => void
   submitting?: boolean
   progress?: 'signing-in' | 'creating' | null
   error?: string | null
   framed?: boolean
 }
 
-declare const TeamEntry: FC<TeamEntryProps>
-export default TeamEntry
+declare const StartSession: FC<StartSessionProps>
+export default StartSession

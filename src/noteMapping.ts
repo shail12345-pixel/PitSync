@@ -11,6 +11,7 @@ export type NoteRow = {
   match_number: number | null
   category: DbCategory
   content: string
+  author_name: string | null
   created_at: string
 }
 
@@ -22,8 +23,19 @@ export type UiNote = {
   text: string
   meta: string
   team: string
+  author: string
   status?: UiStatus
   created_at: string
+}
+
+// No accounts — author is whatever name was typed in at Start/Join, or
+// blank. A blank byline reads as broken, not anonymous, so it falls back
+// to a real label here rather than being displayed as-is.
+export const DEFAULT_AUTHOR = 'Scout'
+
+export function displayAuthor(name: string | null | undefined): string {
+  const trimmed = name?.trim()
+  return trimmed ? trimmed : DEFAULT_AUTHOR
 }
 
 // categories.js ids <-> scout_notes.category values (see supabase/migrations
@@ -55,6 +67,7 @@ export function rowToUiNote(row: NoteRow, status: UiStatus = 'sent'): UiNote {
     text: row.content,
     meta: row.match_number != null ? `Q${row.match_number}` : '',
     team: row.team_number,
+    author: displayAuthor(row.author_name),
     status,
     created_at: row.created_at,
   }

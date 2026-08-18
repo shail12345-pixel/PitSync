@@ -44,7 +44,7 @@ export default function TeamLookup({
         >
           ←
         </button>
-        <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+        <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">
           LOOK UP TEAM
         </span>
       </div>
@@ -64,7 +64,7 @@ export default function TeamLookup({
         <div className="flex flex-col gap-3.5">
           {knownTeams.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+              <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">
                 SCOUTED SO FAR
               </span>
               <div className="pitsync-scroll flex gap-[7px] overflow-x-auto pb-1">
@@ -102,7 +102,7 @@ export default function TeamLookup({
             className="flex h-16 items-center justify-center rounded-[14px] text-[17px] font-semibold tracking-[-0.01em] transition-transform active:scale-[0.985]"
             style={{
               background: team.trim().length > 0 ? 'oklch(0.94 0.012 95)' : 'rgba(255,255,255,0.06)',
-              color: team.trim().length > 0 ? '#08090b' : 'rgba(255,255,255,0.4)',
+              color: team.trim().length > 0 ? '#08090b' : 'rgba(255,255,255,0.55)',
             }}
           >
             View team

@@ -3,24 +3,29 @@ import { CATEGORIES, AMBER, noteStyle } from './categories';
 import { ConnectionBar, Screen } from './Chrome';
 
 /**
- * Scout — stands side. Pick a category, type, send.
+ * Scout — stands side. Set the team, pick a category, type, send.
+ *
+ * A session isn't scoped to one team — a scout can note different teams
+ * across the same session without leaving it, so team lives on the
+ * composer, not the header. The last team typed in stays as the default
+ * for the next note (scouts often watch one team across a few matches in
+ * a row); changing it per note is just editing the field.
  *
  * props:
- *   team          string          e.g. '1234A'
  *   match         number
  *   onMatchChange(next)
  *   sessionCode   string
  *   driverCount   number
  *   onCopyCode()
- *   notes         Array<{ id, category, text, meta, status: 'sending'|'queued'|'sent' }>
+ *   notes         Array<{ id, category, text, meta, team, author, status: 'sending'|'queued'|'sent' }>
  *                 newest first — the log renders in the order you give it
- *   onSend(categoryId, text)      you own the write + status transitions
+ *   onSend(categoryId, text, team)      you own the write + status transitions
  *   connection    'good' | 'spotty' | 'offline'
  *   categories    override CATEGORIES
  *   defaultCategory
+ *   defaultTeam   string   prefill for the team field, e.g. on rejoin
  */
 export default function Scout({
-  team = '1234A',
   match = 1,
   onMatchChange,
   sessionCode = '',
@@ -31,27 +36,32 @@ export default function Scout({
   connection = 'good',
   categories = CATEGORIES,
   defaultCategory,
+  defaultTeam = '',
   onLeave,
   framed = false,
 }) {
   const [category, setCategory] = useState(defaultCategory || categories[0].id);
+  const [teamInput, setTeamInput] = useState(defaultTeam);
   const [draft, setDraft] = useState('');
 
   const offline = connection === 'offline';
-  const canSend = draft.trim().length > 0;
+  const team = teamInput.trim().toUpperCase();
+  const canSend = draft.trim().length > 0 && team.length > 0;
 
   const submit = () => {
     const text = draft.trim();
-    if (!text) return;
-    onSend?.(category, text);
+    if (!text || !team) return;
+    onSend?.(category, text, team);
     setDraft('');
+    // teamInput itself is left alone — it's the remembered default for
+    // whatever note comes next, on purpose.
   };
 
   const hint = offline
     ? 'no signal — notes hold here and go the moment wifi returns'
     : connection === 'spotty'
       ? 'weak venue wifi — sent notes show a transit line until confirmed'
-      : 'return to send · category sticks until you change it';
+      : 'return to send · team and category stick until you change them';
 
   return (
     <Screen framed={framed}>
@@ -68,10 +78,10 @@ export default function Scout({
             ←
           </button>
           <div className="flex flex-col gap-1">
-            <span className="font-['IBM_Plex_Sans'] text-[10px] font-semibold tracking-[0.08em] text-white/[0.34]">
+            <span className="font-['IBM_Plex_Sans'] text-[10px] font-semibold tracking-[0.08em] text-white/[0.48]">
               SCOUTING
             </span>
-            <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{team}</span>
+            <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{sessionCode}</span>
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -84,7 +94,7 @@ export default function Scout({
             −
           </button>
           <div className="flex min-w-[46px] flex-col items-center gap-0.5">
-            <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+            <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">
               MATCH
             </span>
             <span className="font-['IBM_Plex_Mono'] text-[17px] text-white/[0.86]">Q{match}</span>
@@ -100,10 +110,8 @@ export default function Scout({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between px-[22px] pb-3 font-['IBM_Plex_Mono'] text-[11px] text-white/30">
-        <span>
-          SESSION <span className="tracking-[0.06em] text-white/70">{sessionCode}</span> · {driverCount} in pit
-        </span>
+      <div className="flex shrink-0 items-center justify-between px-[22px] pb-3 font-['IBM_Plex_Mono'] text-[11px] text-white/[0.48]">
+        <span>{driverCount} in pit</span>
         <button type="button" onClick={onCopyCode} className="text-white/50">
           copy code
         </button>
@@ -124,7 +132,9 @@ export default function Scout({
               <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
                 <div className="flex items-baseline gap-2 font-['IBM_Plex_Mono'] text-[10px] tracking-[0.12em]">
                   <span style={{ color: s.labelColor }}>{s.label}</span>
-                  <span className="text-white/[0.24]">{note.meta}</span>
+                  <span className="text-white/[0.6]">
+                    {[note.team, note.meta, note.author].filter(Boolean).join(' · ')}
+                  </span>
                   <span className="ml-auto tracking-[0.08em]" style={{ color: s.statusColor }}>
                     {s.statusText}
                   </span>
@@ -142,6 +152,20 @@ export default function Scout({
       </div>
 
       <div className="flex shrink-0 flex-col gap-3 border-t border-white/[0.08] bg-[#0a0b0d] px-[18px] pb-[26px] pt-3.5">
+        <div className="flex flex-col gap-1">
+          <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">TEAM</span>
+          <input
+            value={teamInput}
+            onChange={(e) => setTeamInput(e.target.value)}
+            placeholder="1234A"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="next"
+            className="h-11 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 text-[17px] font-semibold uppercase tracking-[0.02em] text-[oklch(0.95_0.005_90)] outline-none placeholder:text-white/20 placeholder:normal-case focus:border-white/[0.26]"
+          />
+        </div>
+
         <div className="flex flex-wrap gap-[7px]">
           {categories.map((c) => {
             const on = category === c.id;
@@ -168,7 +192,7 @@ export default function Scout({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder={`Note on ${team}…`}
+            placeholder={team ? `Note on ${team}…` : 'Note…'}
             enterKeyHint="send"
             className="h-12 min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 text-[15px] outline-none placeholder:text-white/25 focus:border-white/[0.26]"
           />
@@ -192,7 +216,7 @@ export default function Scout({
 
         <div
           className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.08em]"
-          style={{ color: offline ? AMBER : 'rgba(255,255,255,0.28)' }}
+          style={{ color: offline ? AMBER : 'rgba(255,255,255,0.48)' }}
         >
           {hint}
         </div>

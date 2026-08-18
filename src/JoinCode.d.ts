@@ -4,7 +4,7 @@ import type { Connection } from './Landing'
 export interface JoinCodeProps {
   connection?: Connection
   onBack?: () => void
-  onSubmit?: (code: string) => void
+  onSubmit?: (code: string, name: string) => void
   submitting?: boolean
   progress?: 'signing-in' | 'joining' | null
   error?: string | null

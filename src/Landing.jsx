@@ -27,7 +27,7 @@ export default function Landing({
         <div className="flex flex-col gap-[18px]">
           <div className="flex flex-col gap-1.5">
             <div className="text-[34px] font-semibold leading-none tracking-[-0.025em]">PitSync</div>
-            <div className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.14em] text-white/30">
+            <div className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.14em] text-white/[0.48]">
               VEX V5 · SCOUT → DRIVE
             </div>
           </div>
@@ -44,7 +44,7 @@ export default function Landing({
               className="flex items-center justify-between rounded-xl border border-dashed border-white/10 px-3.5 py-3 text-left active:bg-white/[0.03]"
             >
               <span className="flex flex-col gap-[3px]">
-                <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+                <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">
                   LAST SESSION
                 </span>
                 <span className="font-['IBM_Plex_Mono'] text-[15px] tracking-[0.1em] text-white/[0.72]">
@@ -62,7 +62,7 @@ export default function Landing({
               className="flex h-16 items-center justify-between rounded-[14px] bg-[oklch(0.94_0.012_95)] px-[22px] text-[17px] font-semibold tracking-[-0.01em] text-[#08090b] transition-transform active:scale-[0.985]"
             >
               <span>Start scouting</span>
-              <span className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.1em] opacity-55">HOST</span>
+              <span className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.1em] opacity-[0.65]">HOST</span>
             </button>
             <button
               type="button"
@@ -70,7 +70,7 @@ export default function Landing({
               className="flex h-16 items-center justify-between rounded-[14px] border border-white/15 px-[22px] text-[17px] font-medium active:bg-white/[0.04]"
             >
               <span>Join as driver</span>
-              <span className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.1em] text-white/[0.32]">
+              <span className="font-['IBM_Plex_Mono'] text-[11px] tracking-[0.1em] text-white/[0.48]">
                 4-CHAR CODE
               </span>
             </button>
@@ -78,7 +78,7 @@ export default function Landing({
 
           <div className="flex items-center gap-2 pt-1">
             <div className="h-px w-3.5 bg-white/[0.18]" />
-            <span className="font-['IBM_Plex_Mono'] text-[10.5px] tracking-[0.08em] text-white/30">
+            <span className="font-['IBM_Plex_Mono'] text-[10.5px] tracking-[0.08em] text-white/[0.48]">
               add to home screen · works offline, syncs later
             </span>
           </div>

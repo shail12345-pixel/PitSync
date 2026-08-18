@@ -3,7 +3,7 @@
 export type LastSession = {
   code: string
   role: 'scout' | 'driver'
-  team?: string
+  name?: string
 }
 
 const KEY = 'pitsync:lastSession'

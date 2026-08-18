@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient'
 import Landing from './Landing'
-import TeamEntry from './TeamEntry'
+import StartSession from './StartSession'
 import JoinCode from './JoinCode'
 import Scout from './Scout'
 import Driver from './Driver'
 import TeamLookup from './TeamLookup'
 import TeamNotes from './TeamNotes'
-import { dbCategoryForId, rowToUiNote } from './noteMapping'
+import { dbCategoryForId, displayAuthor, rowToUiNote } from './noteMapping'
 import type { NoteRow, UiNote } from './noteMapping'
 import { dequeueNote, queueNote, queuedNotesForSession } from './offlineQueue'
 import { readLastSession, writeLastSession } from './lastSession'
@@ -16,7 +16,7 @@ import type { LastSession } from './lastSession'
 import { createSession, joinSession } from './sessionAuth'
 import type { CreateProgress, JoinProgress } from './sessionAuth'
 
-type View = 'landing' | 'team-entry' | 'join-code' | 'scout' | 'driver' | 'team-lookup' | 'team-notes'
+type View = 'landing' | 'start-session' | 'join-code' | 'scout' | 'driver' | 'team-lookup' | 'team-notes'
 type ConnectionState = 'good' | 'spotty' | 'offline'
 
 // Codes are typed by hand on someone else's phone — 4 chars, no 0/O/1/I.
@@ -54,7 +54,6 @@ const SEND_TIMEOUT_MS = 8000
 function App() {
   const [view, setView] = useState<View>('landing')
   const [sessionCode, setSessionCode] = useState('')
-  const [team, setTeam] = useState('')
   const [match, setMatch] = useState(1)
   const [notes, setNotes] = useState<UiNote[]>([])
   const [filter, setFilter] = useState('all')
@@ -70,6 +69,10 @@ function App() {
   const [joinProgress, setJoinProgress] = useState<JoinProgress | null>(null)
   const [joinError, setJoinError] = useState<string | null>(null)
   const [lookupTeam, setLookupTeam] = useState('')
+  // Not an account — just whatever name was typed in at Start/Join, kept
+  // for as long as this client is in a session (and remembered across a
+  // rejoin, same as the session code already is).
+  const [authorName, setAuthorName] = useState('')
 
   const lastActivityRef = useRef(Date.now())
   const flushingRef = useRef(false)
@@ -133,6 +136,7 @@ function App() {
             match_number: pending.match,
             category: pending.category,
             content: pending.text,
+            author_name: pending.authorName || null,
           })
           .select()
           .single()
@@ -165,7 +169,6 @@ function App() {
       )
     })
     setSyncedAt(formatClock(new Date()))
-    if (!team && rows.length > 0) setTeam(rows[0].team_number)
   }
 
   // Realtime only carries events from the moment a channel is (re)subscribed
@@ -240,7 +243,6 @@ function App() {
             return [rowToUiNote(row), ...current]
           })
           setSyncedAt(formatClock(new Date()))
-          setTeam((current) => current || row.team_number)
           recordActivity()
         },
       )
@@ -295,20 +297,24 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connection, sessionCode])
 
-  function enterSession(code: string, nextView: 'scout' | 'driver', nextTeam: string) {
-    setTeam(nextTeam)
+  function enterSession(code: string, nextView: 'scout' | 'driver', nextName: string = '') {
+    setAuthorName(nextName)
     setMatch(1)
     setNotes([])
     setFilter('all')
     setDriverCount(0)
     setSessionCode(code)
     setView(nextView)
-    const session: LastSession = { code, role: nextView === 'scout' ? 'scout' : 'driver', team: nextTeam || undefined }
+    const session: LastSession = {
+      code,
+      role: nextView === 'scout' ? 'scout' : 'driver',
+      name: nextName || undefined,
+    }
     writeLastSession(session)
     setLastSession(session)
   }
 
-  async function attemptJoin(code: string, nextView: 'scout' | 'driver', fallbackTeam: string) {
+  async function attemptJoin(code: string, nextView: 'scout' | 'driver', name: string = '') {
     const result = await joinSession(code)
     if (!result.ok) {
       window.alert(
@@ -318,12 +324,12 @@ function App() {
       )
       return
     }
-    enterSession(code, nextView, result.team || fallbackTeam)
+    enterSession(code, nextView, name)
   }
 
   function handleStart() {
     setStartError(null)
-    setView('team-entry')
+    setView('start-session')
   }
 
   function handleJoin() {
@@ -337,15 +343,15 @@ function App() {
     setView('landing')
   }
 
-  async function handleTeamSubmit(team: string) {
+  async function handleStartSubmit(name: string) {
     setStartSubmitting(true)
     setStartError(null)
     setStartProgress(null)
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = generateCode()
-      const result = await createSession(code, team, setStartProgress)
+      const result = await createSession(code, setStartProgress)
       if (result.ok) {
-        enterSession(code, 'scout', team)
+        enterSession(code, 'scout', name)
         setStartSubmitting(false)
         setStartProgress(null)
         return
@@ -366,7 +372,7 @@ function App() {
     setStartProgress(null)
   }
 
-  async function handleCodeSubmit(code: string) {
+  async function handleCodeSubmit(code: string, name: string) {
     setJoinSubmitting(true)
     setJoinError(null)
     setJoinProgress(null)
@@ -383,14 +389,14 @@ function App() {
       setJoinProgress(null)
       return
     }
-    enterSession(code, 'driver', result.team)
+    enterSession(code, 'driver', name)
     setJoinSubmitting(false)
     setJoinProgress(null)
   }
 
   async function handleRejoin(code: string) {
     const stored = lastSession?.code === code ? lastSession : null
-    await attemptJoin(code, stored?.role === 'scout' ? 'scout' : 'driver', stored?.team ?? '')
+    await attemptJoin(code, stored?.role === 'scout' ? 'scout' : 'driver', stored?.name ?? '')
   }
 
   function handleLookupTeam() {
@@ -409,7 +415,7 @@ function App() {
   function handleLeave() {
     supabase.auth.signOut().catch(() => {})
     setSessionCode('')
-    setTeam('')
+    setAuthorName('')
     setMatch(1)
     setNotes([])
     setFilter('all')
@@ -418,7 +424,7 @@ function App() {
     setView('landing')
   }
 
-  async function handleSend(categoryId: string, text: string) {
+  async function handleSend(categoryId: string, text: string, team: string) {
     const dbCategory = dbCategoryForId(categoryId)
     const tempId = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
     // Same signal as the badge, not raw navigator.onLine — don't attempt
@@ -431,13 +437,14 @@ function App() {
       text,
       meta: `Q${match}`,
       team,
+      author: displayAuthor(authorName),
       status: looksOffline ? 'queued' : 'sending',
       created_at: new Date().toISOString(),
     }
     setNotes((current) => [optimistic, ...current])
 
     if (looksOffline) {
-      queueNote({ tempId, sessionCode, team, match, category: dbCategory, text })
+      queueNote({ tempId, sessionCode, team, match, category: dbCategory, text, authorName })
       return
     }
 
@@ -453,6 +460,7 @@ function App() {
         match_number: match,
         category: dbCategory,
         content: text,
+        author_name: authorName.trim() || null,
       })
       .select()
       .abortSignal(controller.signal)
@@ -460,7 +468,7 @@ function App() {
     clearTimeout(timer)
 
     if (error || !data) {
-      queueNote({ tempId, sessionCode, team, match, category: dbCategory, text })
+      queueNote({ tempId, sessionCode, team, match, category: dbCategory, text, authorName })
       setNotes((current) => current.map((n) => (n.id === tempId ? { ...n, status: 'queued' } : n)))
       return
     }
@@ -487,12 +495,12 @@ function App() {
     )
   }
 
-  if (view === 'team-entry') {
+  if (view === 'start-session') {
     return (
-      <TeamEntry
+      <StartSession
         connection={online ? 'good' : 'offline'}
         onBack={handleBackToLanding}
-        onSubmit={handleTeamSubmit}
+        onSubmit={handleStartSubmit}
         submitting={startSubmitting}
         progress={startProgress}
         error={startError}
@@ -516,7 +524,6 @@ function App() {
   if (view === 'scout') {
     return (
       <Scout
-        team={team}
         match={match}
         onMatchChange={setMatch}
         sessionCode={sessionCode}
@@ -547,7 +554,6 @@ function App() {
 
   return (
     <Driver
-      team={team}
       sessionCode={sessionCode}
       notes={notes}
       filter={filter}

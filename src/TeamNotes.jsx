@@ -1,4 +1,4 @@
-import { CATEGORIES, noteStyle } from './categories';
+import { CATEGORIES, groupNotesByCategory, noteStyle } from './categories';
 import { ConnectionBar, Screen } from './Chrome';
 
 /**
@@ -27,9 +27,7 @@ export default function TeamNotes({
   framed = false,
 }) {
   const teamNotes = notes.filter((n) => n.team === team);
-  const groups = categories
-    .map((cat) => ({ cat, items: teamNotes.filter((n) => n.category === cat.id) }))
-    .filter((g) => g.items.length > 0);
+  const groups = groupNotesByCategory(teamNotes, categories);
 
   return (
     <Screen framed={framed}>
@@ -45,7 +43,7 @@ export default function TeamNotes({
           ←
         </button>
         <div className="flex flex-col gap-1">
-          <span className="font-['IBM_Plex_Sans'] text-[10px] font-semibold tracking-[0.08em] text-white/[0.34]">
+          <span className="font-['IBM_Plex_Sans'] text-[10px] font-semibold tracking-[0.08em] text-white/[0.48]">
             TEAM · ACCUMULATED
           </span>
           <span className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{team}</span>
@@ -57,7 +55,7 @@ export default function TeamNotes({
       {groups.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-10 text-center">
           <div className="text-[17px] font-semibold text-white/[0.7]">No notes on {team} yet</div>
-          <p className="max-w-[240px] text-pretty text-[14px] leading-[1.45] text-white/40">
+          <p className="max-w-[240px] text-pretty text-[14px] leading-[1.45] text-white/[0.5]">
             Nothing's been scouted on this team this session — check back once a scout sends something in.
           </p>
         </div>
@@ -82,8 +80,8 @@ export default function TeamNotes({
                     >
                       <div className="w-0.5 shrink-0 rounded-sm" style={{ background: s.tick }} />
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <div className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.12em] text-white/[0.24]">
-                          {note.meta}
+                        <div className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.12em] text-white/[0.6]">
+                          {[note.meta, note.author].filter(Boolean).join(' · ')}
                         </div>
                         <div className="text-pretty text-[14.5px] leading-[1.4] text-white/70">{note.text}</div>
                       </div>

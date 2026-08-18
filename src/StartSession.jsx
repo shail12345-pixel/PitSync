@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { ConnectionBar, Screen } from './Chrome';
 
 /**
- * TeamEntry — one field between "Start scouting" and a live session.
- * Replaces the old window.prompt() team-number ask.
+ * StartSession — the one optional field between "Start scouting" and a
+ * live session. A session isn't scoped to a team anymore (a scout notes
+ * whatever team's in front of them, per note), so the only thing worth
+ * asking here is who's scouting — and even that's optional, matching the
+ * "no accounts" model.
  *
  * props:
  *   connection  'good' | 'spotty' | 'offline'
  *   onBack()               return to Landing
- *   onSubmit(team)          team is already trimmed + uppercased
+ *   onSubmit(name)          name is trimmed, may be '' — never required
  *   submitting  boolean     session is being created — disable + show state
  *   progress    'signing-in'|'creating'|null   real stage, not a guess —
  *               shown instead of a static "Starting…" so a slow attempt
@@ -20,7 +23,7 @@ const PROGRESS_LABEL = {
   creating: 'Starting session…',
 };
 
-export default function TeamEntry({
+export default function StartSession({
   connection = 'good',
   onBack,
   onSubmit,
@@ -29,12 +32,12 @@ export default function TeamEntry({
   error = null,
   framed = false,
 }) {
-  const [team, setTeam] = useState('');
-  const canSubmit = team.trim().length > 0 && !submitting;
+  const [name, setName] = useState('');
+  const canSubmit = !submitting;
 
   const submit = () => {
     if (!canSubmit) return;
-    onSubmit?.(team.trim().toUpperCase());
+    onSubmit?.(name.trim());
   };
 
   return (
@@ -50,7 +53,7 @@ export default function TeamEntry({
         >
           ←
         </button>
-        <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+        <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">
           NEW SESSION · HOST
         </span>
       </div>
@@ -58,28 +61,28 @@ export default function TeamEntry({
       <div className="flex flex-1 flex-col justify-between px-7 pb-8 pt-6">
         <div className="flex flex-col gap-2">
           <div className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em]">
-            Which team are
+            What should we
             <br />
-            you scouting?
+            call you?
           </div>
           <p className="max-w-[260px] text-pretty text-[15px] leading-[1.45] text-white/[0.5]">
-            This starts a new session your drivers can join with a 4-char code.
+            Shows up on the notes you send. Skip it if you'd rather stay anonymous — you can note any team once
+            you're in.
           </p>
         </div>
 
         <div className="flex flex-col gap-3.5">
           <input
-            value={team}
-            onChange={(e) => setTeam(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder="1234A"
+            placeholder="Your name (optional)"
             autoFocus
-            autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
             enterKeyHint="go"
             disabled={submitting}
-            className="h-16 rounded-[14px] border border-white/[0.12] bg-white/[0.03] px-[18px] text-[22px] font-semibold uppercase tracking-[0.02em] text-[oklch(0.95_0.005_90)] outline-none placeholder:text-white/20 placeholder:normal-case focus:border-white/[0.28] disabled:opacity-50"
+            className="h-16 rounded-[14px] border border-white/[0.12] bg-white/[0.03] px-[18px] text-[19px] font-semibold text-[oklch(0.95_0.005_90)] outline-none placeholder:text-white/20 focus:border-white/[0.28] disabled:opacity-50"
           />
 
           {error && (
@@ -95,7 +98,7 @@ export default function TeamEntry({
             className="flex h-16 items-center justify-center rounded-[14px] text-[17px] font-semibold tracking-[-0.01em] transition-transform active:scale-[0.985]"
             style={{
               background: canSubmit ? 'oklch(0.94 0.012 95)' : 'rgba(255,255,255,0.06)',
-              color: canSubmit ? '#08090b' : 'rgba(255,255,255,0.4)',
+              color: canSubmit ? '#08090b' : 'rgba(255,255,255,0.55)',
             }}
           >
             {submitting ? PROGRESS_LABEL[progress] ?? 'Starting…' : 'Start session'}

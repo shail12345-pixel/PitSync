@@ -44,16 +44,17 @@ export type JoinProgress = 'signing-in' | 'joining'
 
 export type CreateResult = { ok: true } | { ok: false; reason: 'auth' | 'conflict' | 'other' | 'timeout' }
 
-export async function createSession(
-  code: string,
-  teamNumber: string,
-  onProgress?: (stage: CreateProgress) => void,
-): Promise<CreateResult> {
+// A session is no longer scoped to one team — a scout notes whatever team
+// is in front of them, per note, and that can change across the session.
+// `sessions.team_number` stays NOT NULL in the DB (untouched schema), so
+// this still writes it, just as '' — nothing reads it back as meaningful
+// anymore.
+export async function createSession(code: string, onProgress?: (stage: CreateProgress) => void): Promise<CreateResult> {
   const attempt = async (): Promise<CreateResult> => {
     onProgress?.('signing-in')
     if (!(await signInForSession(code))) return { ok: false, reason: 'auth' }
     onProgress?.('creating')
-    const { error } = await supabase.from('sessions').insert({ code, team_number: teamNumber })
+    const { error } = await supabase.from('sessions').insert({ code, team_number: '' })
     if (!error) return { ok: true }
     // 23505 = unique_violation on the code primary key — vanishingly rare
     // with a 4-char code, but let the caller retry with a fresh one.
@@ -63,16 +64,16 @@ export async function createSession(
   return result === 'timeout' ? { ok: false, reason: 'timeout' } : result
 }
 
-export type JoinResult = { ok: true; team: string } | { ok: false; reason: 'auth' | 'not-found' | 'timeout' }
+export type JoinResult = { ok: true } | { ok: false; reason: 'auth' | 'not-found' | 'timeout' }
 
 export async function joinSession(code: string, onProgress?: (stage: JoinProgress) => void): Promise<JoinResult> {
   const attempt = async (): Promise<JoinResult> => {
     onProgress?.('signing-in')
     if (!(await signInForSession(code))) return { ok: false, reason: 'auth' }
     onProgress?.('joining')
-    const { data } = await supabase.from('sessions').select('team_number').eq('code', code).maybeSingle()
+    const { data } = await supabase.from('sessions').select('code').eq('code', code).maybeSingle()
     if (!data) return { ok: false, reason: 'not-found' }
-    return { ok: true, team: data.team_number }
+    return { ok: true }
   }
   const result = await withTimeout(attempt(), ATTEMPT_TIMEOUT_MS)
   return result === 'timeout' ? { ok: false, reason: 'timeout' } : result

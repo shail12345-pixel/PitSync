@@ -10,6 +10,7 @@ export type PendingNote = {
   match: number
   category: DbCategory
   text: string
+  authorName: string
 }
 
 const QUEUE_KEY = 'pitsync:pendingNotes'

@@ -13,21 +13,23 @@ export interface PitSyncNote {
   text: string
   meta?: string
   team?: string
+  author?: string
   status?: 'sending' | 'queued' | 'sent'
+  created_at?: string
 }
 
 export interface ScoutProps {
-  team?: string
   match?: number
   onMatchChange?: (next: number) => void
   sessionCode?: string
   driverCount?: number
   onCopyCode?: () => void
   notes?: PitSyncNote[]
-  onSend?: (categoryId: string, text: string) => void
+  onSend?: (categoryId: string, text: string, team: string) => void
   connection?: Connection
   categories?: NoteCategory[]
   defaultCategory?: string
+  defaultTeam?: string
   onLeave?: () => void
   framed?: boolean
 }

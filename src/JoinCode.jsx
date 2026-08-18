@@ -12,7 +12,9 @@ const CODE_LENGTH = 4;
  * props:
  *   connection  'good' | 'spotty' | 'offline'
  *   onBack()               return to Landing
- *   onSubmit(code)          code is already uppercased, length 4
+ *   onSubmit(code, name)    code is already uppercased, length 4; name is
+ *                           trimmed, may be '' — no account, so it's never
+ *                           required
  *   submitting  boolean     join is in flight — disable + show state
  *   progress    'signing-in'|'joining'|null   real stage, not a guess —
  *               shown instead of a static "Joining…" so a slow attempt
@@ -34,6 +36,7 @@ export default function JoinCode({
   framed = false,
 }) {
   const [chars, setChars] = useState(Array(CODE_LENGTH).fill(''));
+  const [name, setName] = useState('');
   const inputs = useRef([]);
 
   const code = chars.join('');
@@ -41,7 +44,7 @@ export default function JoinCode({
 
   const submit = (value = code) => {
     if (value.length !== CODE_LENGTH || submitting) return;
-    onSubmit?.(value);
+    onSubmit?.(value, name.trim());
   };
 
   const setChar = (i, raw) => {
@@ -94,7 +97,7 @@ export default function JoinCode({
         >
           ←
         </button>
-        <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.28]">
+        <span className="font-['IBM_Plex_Mono'] text-[10px] tracking-[0.14em] text-white/[0.48]">
           JOIN · DRIVER
         </span>
       </div>
@@ -112,6 +115,17 @@ export default function JoinCode({
         </div>
 
         <div className="flex flex-col gap-3.5">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name (optional)"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="next"
+            disabled={submitting}
+            className="h-12 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 text-[15px] text-[oklch(0.95_0.005_90)] outline-none placeholder:text-white/25 focus:border-white/[0.26] disabled:opacity-50"
+          />
+
           <div className="flex justify-between gap-2.5">
             {chars.map((c, i) => (
               <input
@@ -148,7 +162,7 @@ export default function JoinCode({
             className="flex h-16 items-center justify-center rounded-[14px] text-[17px] font-semibold tracking-[-0.01em] transition-transform active:scale-[0.985]"
             style={{
               background: canSubmit ? 'oklch(0.94 0.012 95)' : 'rgba(255,255,255,0.06)',
-              color: canSubmit ? '#08090b' : 'rgba(255,255,255,0.4)',
+              color: canSubmit ? '#08090b' : 'rgba(255,255,255,0.55)',
             }}
           >
             {submitting ? PROGRESS_LABEL[progress] ?? 'Joining…' : 'Join session'}

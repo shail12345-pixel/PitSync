@@ -14,7 +14,13 @@
   0%   { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.pitsync-arrive { animation: pitsync-arrive 0.22s ease-out both; }
+/* `backwards`, not `both` — `both` would also hold the *final* keyframe
+   (opacity: 1) forever, permanently overriding a sending/queued note's own
+   inline `style={{ opacity: s.opacity }}` dimming the instant this entrance
+   animation finished. Found via the contrast audit: it was silently
+   pinning in-transit notes at full opacity, so the "still sending" fade
+   never actually rendered. */
+.pitsync-arrive { animation: pitsync-arrive 0.22s ease-out backwards; }
  
 /* hide scrollbars in the note logs */
 .pitsync-scroll::-webkit-scrollbar { width: 0; height: 0; }

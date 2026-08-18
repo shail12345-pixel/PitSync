@@ -17,6 +17,15 @@ export const getCategory = (id, categories = CATEGORIES) =>
  
 // Visual treatment for a note's delivery state.
 // note.status: 'sending' | 'queued' | 'sent'
+//
+// The row-level `opacity` compounds with every color inside that row (it
+// dims the whole subtree, not just a tint) — WCAG AA needs the compounded
+// result to still clear 4.5:1 against the page background, not just the
+// undimmed color in isolation. 0.88/0.80 here (was 0.62/0.48) is the
+// smallest dimming that leaves labelColor/statusColor's own 0.62 white
+// legible once multiplied through; the label/status/shimmer treatments
+// already carry the "still in transit" signal, so the row itself doesn't
+// need to fade much further on top of that.
 export function noteStyle(note, categories = CATEGORIES) {
   const cat = getCategory(note.category, categories);
   const sending = note.status === 'sending';
@@ -24,15 +33,23 @@ export function noteStyle(note, categories = CATEGORIES) {
   return {
     cat,
     label: cat.label,
-    labelColor: sending || queued ? 'rgba(255,255,255,0.42)' : cat.color,
+    labelColor: sending || queued ? 'rgba(255,255,255,0.62)' : cat.color,
     tick: queued ? 'rgba(255,255,255,0.16)' : sending ? 'rgba(255,255,255,0.3)' : cat.color,
-    opacity: sending ? 0.62 : queued ? 0.48 : 1,
+    opacity: sending ? 0.88 : queued ? 0.8 : 1,
     statusText: sending ? 'sending' : queued ? 'queued · offline' : '',
-    statusColor: queued ? AMBER : 'rgba(255,255,255,0.35)',
+    statusColor: queued ? AMBER : 'rgba(255,255,255,0.62)',
     shimmer: sending,
   };
 }
  
+// Buckets notes into their categories, newest-first within each, dropping
+// empty categories. Shared by any "accumulated picture" view — TeamNotes
+// (one team) and Driver's team-grouped default view (every team this
+// session, each using this same per-team grouping underneath).
+export function groupNotesByCategory(notes, categories = CATEGORIES) {
+  return categories.map((cat) => ({ cat, items: notes.filter((n) => n.category === cat.id) })).filter((g) => g.items.length > 0);
+}
+
 // connection: 'good' | 'spotty' | 'offline'
 export function connectionStyle(connection) {
   if (connection === 'offline') return { color: RED, width: '18%', label: 'offline · queueing' };
